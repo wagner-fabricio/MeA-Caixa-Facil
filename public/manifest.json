@@ -1,0 +1,22 @@
+{
+    "name": "M&A Caixa Fácil",
+    "short_name": "Caixa Fácil",
+    "description": "Controle do caixa sem complicação",
+    "start_url": "/dashboard",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#00D4FF",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "/logo.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/logo.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
