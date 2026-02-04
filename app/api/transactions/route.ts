@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { createClient } from '@/utils/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { parseTransaction, validateTransaction } from '@/lib/nlp/transaction-parser'
 import { z } from 'zod'
@@ -13,8 +12,10 @@ const createTransactionSchema = z.object({
 
 export async function POST(req: NextRequest) {
     try {
-        const session = await getServerSession(authOptions)
-        if (!session?.user?.id) {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
             return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
         }
 
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
         const business = await prisma.business.findFirst({
             where: {
                 id: businessId,
-                ownerId: session.user.id,
+                ownerId: user.id,
             },
         })
 
@@ -86,8 +87,10 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
     try {
-        const session = await getServerSession(authOptions)
-        if (!session?.user?.id) {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
             return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
         }
 
@@ -104,7 +107,7 @@ export async function GET(req: NextRequest) {
         const business = await prisma.business.findFirst({
             where: {
                 id: businessId,
-                ownerId: session.user.id,
+                ownerId: user.id,
             },
         })
 

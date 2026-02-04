@@ -1,14 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Mail, Lock, Loader2 } from 'lucide-react'
+import { createClient } from '@/utils/supabase/client'
 
 export default function LoginPage() {
     const router = useRouter()
+    const supabase = createClient()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
@@ -20,16 +21,16 @@ export default function LoginPage() {
         setLoading(true)
 
         try {
-            const result = await signIn('credentials', {
+            const { error: loginError } = await supabase.auth.signInWithPassword({
                 email,
                 password,
-                redirect: false,
             })
 
-            if (result?.error) {
+            if (loginError) {
                 setError('Email ou senha incorretos')
             } else {
                 router.push('/dashboard')
+                router.refresh()
             }
         } catch (err) {
             setError('Erro ao fazer login. Tente novamente.')
@@ -38,8 +39,13 @@ export default function LoginPage() {
         }
     }
 
-    const handleGoogleSignIn = () => {
-        signIn('google', { callbackUrl: '/dashboard' })
+    const handleGoogleSignIn = async () => {
+        await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: `${window.location.origin}/auth/callback`,
+            },
+        })
     }
 
     return (

@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { createClient } from '@/utils/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { generateAlerts } from '@/lib/alerts/alert-engine'
 
 export async function GET(req: NextRequest) {
     try {
-        const session = await getServerSession(authOptions)
-        if (!session?.user?.id) {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
             return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
         }
 
@@ -22,7 +23,7 @@ export async function GET(req: NextRequest) {
         const business = await prisma.business.findFirst({
             where: {
                 id: businessId,
-                ownerId: session.user.id,
+                ownerId: user.id,
             },
         })
 
@@ -53,8 +54,10 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
     try {
-        const session = await getServerSession(authOptions)
-        if (!session?.user?.id) {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
             return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
         }
 
@@ -64,7 +67,7 @@ export async function POST(req: NextRequest) {
         const business = await prisma.business.findFirst({
             where: {
                 id: businessId,
-                ownerId: session.user.id,
+                ownerId: user.id,
             },
         })
 
@@ -133,8 +136,10 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
     try {
-        const session = await getServerSession(authOptions)
-        if (!session?.user?.id) {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
             return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
         }
 
@@ -145,7 +150,7 @@ export async function PUT(req: NextRequest) {
             include: { business: true },
         })
 
-        if (!alert || alert.business.ownerId !== session.user.id) {
+        if (!alert || alert.business.ownerId !== user.id) {
             return NextResponse.json({ error: 'Alerta não encontrado' }, { status: 404 })
         }
 

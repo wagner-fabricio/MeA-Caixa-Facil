@@ -86,62 +86,75 @@ export default function IncomeExpenseChart({ transactions }: IncomeExpenseChartP
     const chartData = processData()
 
     return (
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-            <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-primary-navy">Entradas vs Saídas</h3>
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => setPeriod('day')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${period === 'day'
-                            ? 'bg-primary-cyan text-white'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                            }`}
-                    >
-                        Dia
-                    </button>
-                    <button
-                        onClick={() => setPeriod('week')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${period === 'week'
-                            ? 'bg-primary-cyan text-white'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                            }`}
-                    >
-                        Semana
-                    </button>
-                    <button
-                        onClick={() => setPeriod('month')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${period === 'month'
-                            ? 'bg-primary-cyan text-white'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                            }`}
-                    >
-                        Mês
-                    </button>
+        <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl shadow-primary-navy/5 p-8 border border-gray-100 dark:border-gray-800">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                <div>
+                    <h3 className="text-xl font-bold text-primary-navy dark:text-white">Fluxo de Caixa</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Entradas vs Saídas no período</p>
+                </div>
+                <div className="flex bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl">
+                    {(['day', 'week', 'month'] as Period[]).map((p) => (
+                        <button
+                            key={p}
+                            onClick={() => setPeriod(p)}
+                            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${period === p
+                                ? 'bg-white dark:bg-gray-700 text-primary-navy dark:text-white shadow-sm'
+                                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                                }`}
+                        >
+                            {p === 'day' ? 'Dia' : p === 'week' ? 'Semana' : 'Mês'}
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="name" stroke="#6B7280" style={{ fontSize: '12px' }} />
-                    <YAxis stroke="#6B7280" style={{ fontSize: '12px' }} />
-                    <Tooltip
-                        contentStyle={{
-                            backgroundColor: '#fff',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '8px',
-                            fontSize: '14px',
-                        }}
-                        formatter={(value: number | undefined) => value !== undefined ? `R$ ${value.toFixed(2)}` : 'N/A'}
-                    />
-                    <Legend
-                        wrapperStyle={{ fontSize: '14px', paddingTop: '20px' }}
-                        formatter={(value) => (value === 'income' ? 'Entradas' : 'Saídas')}
-                    />
-                    <Bar dataKey="income" fill="#10B981" radius={[8, 8, 0, 0]} />
-                    <Bar dataKey="expense" fill="#EF4444" radius={[8, 8, 0, 0]} />
-                </BarChart>
-            </ResponsiveContainer>
+            <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" className="dark:stroke-gray-800" />
+                        <XAxis
+                            dataKey="name"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: '#9CA3AF', fontSize: 12, fontWeight: 600 }}
+                            dy={10}
+                        />
+                        <YAxis
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: '#9CA3AF', fontSize: 12, fontWeight: 600 }}
+                        />
+                        <Tooltip
+                            cursor={{ fill: '#F3F4F6', opacity: 0.4 }}
+                            contentStyle={{
+                                backgroundColor: '#1E3A5F',
+                                border: 'none',
+                                borderRadius: '16px',
+                                color: '#fff',
+                                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                                padding: '12px'
+                            }}
+                            itemStyle={{ color: '#fff', fontWeight: 600 }}
+                            labelStyle={{ color: '#00D4FF', fontWeight: 800, marginBottom: '4px' }}
+                            formatter={(value: any) => [`R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, '']}
+                        />
+                        <Bar
+                            dataKey="income"
+                            name="Entradas"
+                            fill="#10B981"
+                            radius={[6, 6, 0, 0]}
+                            barSize={32}
+                        />
+                        <Bar
+                            dataKey="expense"
+                            name="Saídas"
+                            fill="#EF4444"
+                            radius={[6, 6, 0, 0]}
+                            barSize={32}
+                        />
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
         </div>
     )
 }

@@ -1,11 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Mail, Lock, User, Briefcase, Loader2 } from 'lucide-react'
+import { createClient } from '@/utils/supabase/client'
 
 const BUSINESS_TYPES = [
     { value: 'barbershop', label: '💈 Barbearia', icon: '💈' },
@@ -17,6 +17,7 @@ const BUSINESS_TYPES = [
 
 export default function SignupPage() {
     const router = useRouter()
+    const supabase = createClient()
     const [step, setStep] = useState(1)
     const [formData, setFormData] = useState({
         name: '',
@@ -34,31 +35,38 @@ export default function SignupPage() {
         setLoading(true)
 
         try {
-            // Create user account
+            // 1. Sign up with Supabase
+            const { data: authData, error: authError } = await supabase.auth.signUp({
+                email: formData.email,
+                password: formData.password,
+                options: {
+                    data: {
+                        name: formData.name,
+                    }
+                }
+            })
+
+            if (authError) throw authError
+
+            // 2. Create business and categories in our DB
             const response = await fetch('/api/auth/signup', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({
+                    ...formData,
+                    supabaseId: authData.user?.id // Link Supabase user to our DB
+                }),
             })
 
             const data = await response.json()
 
             if (!response.ok) {
-                throw new Error(data.error || 'Erro ao criar conta')
+                throw new Error(data.error || 'Erro ao configurar seu negócio')
             }
 
-            // Auto sign in
-            const result = await signIn('credentials', {
-                email: formData.email,
-                password: formData.password,
-                redirect: false,
-            })
-
-            if (result?.error) {
-                throw new Error('Conta criada, mas erro ao fazer login')
-            }
-
+            // Redirect to dashboard (Supabase middleware will handle session)
             router.push('/dashboard')
+            router.refresh()
         } catch (err: any) {
             setError(err.message)
         } finally {
@@ -66,8 +74,13 @@ export default function SignupPage() {
         }
     }
 
-    const handleGoogleSignIn = () => {
-        signIn('google', { callbackUrl: '/onboarding' })
+    const handleGoogleSignIn = async () => {
+        await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: `${window.location.origin}/auth/callback`,
+            },
+        })
     }
 
     return (
@@ -202,8 +215,8 @@ export default function SignupPage() {
                                                 type="button"
                                                 onClick={() => setFormData({ ...formData, businessType: type.value })}
                                                 className={`p-3 rounded-xl border-2 transition-all text-left ${formData.businessType === type.value
-                                                        ? 'border-primary-cyan bg-primary-cyan/5'
-                                                        : 'border-gray-200 hover:border-gray-300'
+                                                    ? 'border-primary-cyan bg-primary-cyan/5'
+                                                    : 'border-gray-200 hover:border-gray-300'
                                                     }`}
                                             >
                                                 <div className="text-2xl mb-1">{type.icon}</div>

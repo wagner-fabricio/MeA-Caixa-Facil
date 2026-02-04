@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { createClient } from '@/utils/supabase/server'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(req: NextRequest) {
     try {
-        const session = await getServerSession(authOptions)
-        if (!session?.user?.id) {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
             return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
         }
 
         const businesses = await prisma.business.findMany({
             where: {
-                ownerId: session.user.id,
+                ownerId: user.id,
             },
             orderBy: {
                 createdAt: 'desc',

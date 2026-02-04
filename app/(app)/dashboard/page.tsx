@@ -1,6 +1,6 @@
 'use client'
 
-import { useSession, signOut } from 'next-auth/react'
+import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { TrendingUp, TrendingDown, DollarSign, Plus, LogOut } from 'lucide-react'
@@ -37,8 +37,9 @@ interface Alert {
 }
 
 export default function DashboardPage() {
-    const { data: session, status } = useSession()
+    const supabase = createClient()
     const router = useRouter()
+    const [user, setUser] = useState<any>(null)
     const [businessId, setBusinessId] = useState<string | null>(null)
     const [data, setData] = useState<DashboardData | null>(null)
     const [alerts, setAlerts] = useState<Alert[]>([])
@@ -46,16 +47,22 @@ export default function DashboardPage() {
     const [showInput, setShowInput] = useState(false)
 
     useEffect(() => {
-        if (status === 'unauthenticated') {
-            router.push('/login')
+        const checkUser = async () => {
+            const { data: { user: currentUser } } = await supabase.auth.getUser()
+            if (!currentUser) {
+                router.push('/login')
+                return
+            }
+            setUser(currentUser)
         }
-    }, [status, router])
+        checkUser()
+    }, [router, supabase])
 
     useEffect(() => {
-        if (session?.user?.id) {
+        if (user) {
             loadBusinessAndData()
         }
-    }, [session])
+    }, [user])
 
     const loadBusinessAndData = async () => {
         try {
@@ -68,6 +75,8 @@ export default function DashboardPage() {
                 setBusinessId(firstBusiness.id)
                 await loadDashboardData(firstBusiness.id)
                 await loadAlerts(firstBusiness.id)
+            } else {
+                router.push('/onboarding')
             }
         } catch (error) {
             console.error('Error loading business:', error)
@@ -147,7 +156,7 @@ export default function DashboardPage() {
         }
     }
 
-    if (loading || !session) {
+    if (loading || !user) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-primary-cyan/10 via-white to-primary-navy/5 flex items-center justify-center">
                 <div className="text-center">
@@ -159,18 +168,21 @@ export default function DashboardPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-primary-cyan/10 via-white to-primary-navy/5">
+        <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
             {/* Header */}
-            <header className="bg-white shadow-sm">
+            <header className="sticky top-0 z-50 bg-white/70 dark:bg-black/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50">
                 <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-                    <h1 className="text-2xl font-bold text-primary-navy">
+                    <h1 className="text-2xl font-bold tracking-tight text-primary-navy dark:text-white">
                         M&A <span className="text-primary-cyan">Caixa Fácil</span>
                     </h1>
                     <div className="flex items-center gap-4">
-                        <span className="text-sm text-gray-600 hidden md:inline">Olá, {session.user?.name}</span>
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400 hidden md:inline">Olá, {user.user_metadata?.name || user.email}</span>
                         <button
-                            onClick={() => signOut({ callbackUrl: '/' })}
-                            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-primary-navy hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
+                            onClick={async () => {
+                                await supabase.auth.signOut()
+                                router.push('/')
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-primary-navy dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all border border-gray-200 dark:border-gray-700 shadow-sm active:scale-95"
                             title="Sair"
                         >
                             <LogOut className="w-4 h-4" />
@@ -191,17 +203,17 @@ export default function DashboardPage() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3 }}
-                        className="bg-white rounded-2xl shadow-lg p-6"
+                        className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl shadow-primary-navy/5 p-6 border border-gray-100 dark:border-gray-800"
                     >
                         <div className="flex items-center gap-3 mb-2">
-                            <div className="w-12 h-12 bg-primary-navy/10 rounded-xl flex items-center justify-center">
-                                <DollarSign className="w-6 h-6 text-primary-navy" />
+                            <div className="w-12 h-12 bg-primary-navy/10 dark:bg-primary-navy/20 rounded-xl flex items-center justify-center">
+                                <DollarSign className="w-6 h-6 text-primary-navy dark:text-primary-cyan" />
                             </div>
-                            <span className="text-gray-600 font-medium">Saldo do Dia</span>
+                            <span className="text-gray-500 dark:text-gray-400 font-semibold text-sm uppercase tracking-wider">Saldo do Dia</span>
                         </div>
-                        <p className={`text-4xl font-bold font-mono ${(data?.balance || 0) >= 0 ? 'text-semantic-income' : 'text-semantic-expense'
+                        <p className={`text-4xl font-black font-mono tracking-tighter ${(data?.balance || 0) >= 0 ? 'text-semantic-income' : 'text-semantic-expense'
                             }`}>
-                            R$ {(data?.balance || 0).toFixed(2)}
+                            R$ {(data?.balance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </p>
                     </motion.div>
 
@@ -210,16 +222,16 @@ export default function DashboardPage() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: 0.1 }}
-                        className="bg-white rounded-2xl shadow-lg p-6"
+                        className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl shadow-semantic-income/5 p-6 border border-gray-100 dark:border-gray-800"
                     >
                         <div className="flex items-center gap-3 mb-2">
-                            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                            <div className="w-12 h-12 bg-semantic-income/10 rounded-xl flex items-center justify-center">
                                 <TrendingUp className="w-6 h-6 text-semantic-income" />
                             </div>
-                            <span className="text-gray-600 font-medium">Entradas Hoje</span>
+                            <span className="text-gray-500 dark:text-gray-400 font-semibold text-sm uppercase tracking-wider">Entradas Hoje</span>
                         </div>
-                        <p className="text-4xl font-bold text-semantic-income font-mono">
-                            R$ {(data?.todayIncome || 0).toFixed(2)}
+                        <p className="text-4xl font-black text-semantic-income font-mono tracking-tighter">
+                            R$ {(data?.todayIncome || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </p>
                     </motion.div>
 
@@ -228,16 +240,16 @@ export default function DashboardPage() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: 0.2 }}
-                        className="bg-white rounded-2xl shadow-lg p-6"
+                        className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl shadow-semantic-expense/5 p-6 border border-gray-100 dark:border-gray-800"
                     >
                         <div className="flex items-center gap-3 mb-2">
-                            <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                            <div className="w-12 h-12 bg-semantic-expense/10 rounded-xl flex items-center justify-center">
                                 <TrendingDown className="w-6 h-6 text-semantic-expense" />
                             </div>
-                            <span className="text-gray-600 font-medium">Saídas Hoje</span>
+                            <span className="text-gray-500 dark:text-gray-400 font-semibold text-sm uppercase tracking-wider">Saídas Hoje</span>
                         </div>
-                        <p className="text-4xl font-bold text-semantic-expense font-mono">
-                            R$ {(data?.todayExpense || 0).toFixed(2)}
+                        <p className="text-4xl font-black text-semantic-expense font-mono tracking-tighter">
+                            R$ {(data?.todayExpense || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </p>
                     </motion.div>
                 </div>

@@ -41,10 +41,10 @@ export default function LandingPage() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <Link
             href="/signup"
-            className="px-8 py-4 bg-primary-navy text-white rounded-xl font-semibold text-lg hover:bg-primary-navy/90 transition-all shadow-lg hover:shadow-xl flex items-center gap-2 min-w-[200px] justify-center transform hover:-translate-y-1"
+            className="px-10 py-5 bg-[#1E3A5F] text-white rounded-2xl font-bold text-xl hover:bg-[#1E3A5F]/90 transition-all shadow-xl hover:shadow-cyan-500/10 flex items-center gap-3 min-w-[220px] justify-center transform hover:-translate-y-1 active:scale-95 border-b-4 border-[#1E3A5F]/30"
           >
             Começar Grátis
-            <ArrowRight className="w-5 h-5 text-primary-cyan" />
+            <ArrowRight className="w-6 h-6 text-[#00D4FF]" />
           </Link>
           <Link
             href="/login"

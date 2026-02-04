@@ -25,29 +25,31 @@ export default function AlertBanner({ alerts, onDismiss }: AlertBannerProps) {
         <div className="space-y-3 mb-6">
             {unreadAlerts.map(alert => {
                 const severityStyles = {
-                    info: 'bg-blue-50 border-blue-200 text-blue-800',
-                    warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-                    critical: 'bg-red-50 border-red-200 text-red-800',
+                    info: 'bg-blue-500/10 border-blue-500/20 text-blue-800 dark:text-blue-300',
+                    warning: 'bg-yellow-500/10 border-yellow-500/20 text-yellow-800 dark:text-yellow-300',
+                    critical: 'bg-red-500/10 border-red-500/20 text-red-800 dark:text-red-300',
                 }
 
                 const Icon = {
                     info: Info,
                     warning: AlertCircle,
                     critical: AlertCircle,
-                }[alert.severity]
+                }[alert.severity as keyof typeof severityStyles]
 
                 return (
                     <div
                         key={alert.id}
-                        className={`flex items-start gap-3 p-4 rounded-xl border-2 ${severityStyles[alert.severity]}`}
+                        className={`flex items-start gap-4 p-5 rounded-2xl border backdrop-blur-md shadow-lg transition-all hover:scale-[1.01] ${severityStyles[alert.severity as keyof typeof severityStyles]}`}
                     >
-                        <Icon className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                        <p className="flex-1 text-sm font-medium">{alert.message}</p>
+                        <div className="bg-white/20 p-2 rounded-xl">
+                            <Icon className="w-5 h-5 flex-shrink-0" />
+                        </div>
+                        <p className="flex-1 text-sm font-bold leading-relaxed">{alert.message}</p>
                         <button
                             onClick={() => onDismiss(alert.id)}
-                            className="flex-shrink-0 hover:opacity-70 transition-opacity"
+                            className="bg-black/5 hover:bg-black/10 p-2 rounded-xl transition-colors"
                         >
-                            <X className="w-5 h-5" />
+                            <X className="w-4 h-4" />
                         </button>
                     </div>
                 )

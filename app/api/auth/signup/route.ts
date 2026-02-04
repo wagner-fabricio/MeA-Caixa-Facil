@@ -1,73 +1,68 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 
 const signupSchema = z.object({
     name: z.string().min(1),
     email: z.string().email(),
-    password: z.string().min(6),
+    password: z.string().min(6), // Still useful for form validation
     businessName: z.string().min(1),
     businessType: z.enum(['barbershop', 'salon', 'workshop', 'retail', 'other']),
+    supabaseId: z.string().min(1), // Required now to link with Supabase Auth
 })
 
 // Default categories for each business type
 const DEFAULT_CATEGORIES = {
     barbershop: {
-        income: ['Corte de Cabelo', 'Barba', 'Coloração', 'Produtos'],
-        expense: ['Aluguel', 'Energia Elétrica', 'Água', 'Produtos', 'Limpeza'],
+        income: ['Corte de Cabelo', 'Barba', 'Combo', 'Produtos', 'Outros'],
+        expense: ['Aluguel', 'Energia', 'Água', 'Produtos de Cabelo', 'Limpeza', 'Marketing'],
     },
     salon: {
-        income: ['Corte', 'Coloração', 'Manicure', 'Pedicure', 'Escova', 'Hidratação', 'Produtos'],
-        expense: ['Aluguel', 'Energia Elétrica', 'Água', 'Produtos', 'Limpeza'],
+        income: ['Cabelo', 'Unhas', 'Maquiagem', 'Estética', 'Produtos', 'Outros'],
+        expense: ['Aluguel', 'Energia', 'Água', 'Produtos de Beleza', 'Limpeza', 'Comissões'],
     },
     workshop: {
-        income: ['Serviços', 'Peças', 'Mão de Obra'],
-        expense: ['Aluguel', 'Energia Elétrica', 'Ferramentas', 'Peças', 'Limpeza'],
+        income: ['Serviços', 'Peças', 'Mão de Obra', 'Acessórios', 'Outros'],
+        expense: ['Aluguel', 'Energia', 'Peças Reposição', 'Ferramentas', 'Limpeza'],
     },
     retail: {
-        income: ['Vendas', 'Serviços'],
-        expense: ['Aluguel', 'Energia Elétrica', 'Água', 'Estoque', 'Limpeza'],
+        income: ['Vendas', 'Serviços', 'Outros'],
+        expense: ['Fornecedores', 'Aluguel', 'Energia', 'Marketing', 'Logística'],
     },
     other: {
-        income: ['Serviços', 'Produtos'],
-        expense: ['Aluguel', 'Energia Elétrica', 'Água', 'Despesas Gerais'],
-    },
+        income: ['Vendas', 'Serviços', 'Outros'],
+        expense: ['Aluguel', 'Energia', 'Operacional', 'Marketing'],
+    }
 }
 
 export async function POST(req: NextRequest) {
     try {
-        console.log('Signup request received')
         const body = await req.json()
         console.log('Signup body:', { ...body, password: '****' })
 
-        const { name, email, password, businessName, businessType } = signupSchema.parse(body)
+        const { name, email, businessName, businessType, supabaseId } = signupSchema.parse(body)
         console.log('Signup data parsed successfully')
 
         // Check if user already exists
         const existingUser = await prisma.user.findUnique({
-            where: { email },
+            where: { id: supabaseId },
         })
 
         if (existingUser) {
             console.log('User already exists:', email)
             return NextResponse.json(
-                { error: 'Este email já está cadastrado' },
-                { status: 400 }
+                { message: 'Usuário já existe no banco de dados' },
+                { status: 200 }
             )
         }
-
-        // Hash password
-        console.log('Hashing password...')
-        const hashedPassword = await bcrypt.hash(password, 10)
 
         // Create user and business in a transaction
         console.log('Creating user and business in transaction...')
         const user = await prisma.user.create({
             data: {
+                id: supabaseId,
                 name,
                 email,
-                password: hashedPassword,
                 businesses: {
                     create: {
                         name: businessName,
@@ -91,35 +86,21 @@ export async function POST(req: NextRequest) {
                     },
                 },
             },
-            include: {
-                businesses: true,
-            },
         })
 
-        console.log('User created successfully:', user.id)
+        console.log('User and Business created successfully:', user.id)
 
         return NextResponse.json({
             user: {
                 id: user.id,
-                name: user.name,
                 email: user.email,
-            },
-            business: user.businesses[0],
+            }
         })
     } catch (error: any) {
-        console.error('Signup error details:', {
-            message: error.message,
-            stack: error.stack,
-            error
-        })
-
+        console.error('Signup error:', error)
         if (error instanceof z.ZodError) {
-            return NextResponse.json(
-                { error: 'Dados inválidos' },
-                { status: 400 }
-            )
+            return NextResponse.json({ error: error.errors }, { status: 400 })
         }
-
         return NextResponse.json(
             { error: error.message || 'Erro ao criar conta' },
             { status: 500 }

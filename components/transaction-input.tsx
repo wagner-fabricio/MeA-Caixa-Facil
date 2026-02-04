@@ -109,8 +109,8 @@ export default function TransactionInput({ businessId, onSuccess }: TransactionI
     }
 
     return (
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-primary-navy mb-4">Registrar Agora</h3>
+        <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] shadow-2xl shadow-primary-navy/10 p-8 border border-gray-100 dark:border-gray-800">
+            <h3 className="text-xl font-black text-primary-navy dark:text-white mb-6 tracking-tight">Registro Rápido</h3>
 
             {/* Input Field */}
             <div className="relative mb-4">
@@ -119,18 +119,18 @@ export default function TransactionInput({ businessId, onSuccess }: TransactionI
                     value={input}
                     onChange={(e) => handleInputChange(e.target.value)}
                     placeholder='Ex: "Corte 35" ou "Luz 180"'
-                    className="w-full px-4 py-4 pr-14 border-2 border-gray-200 rounded-xl focus:border-primary-cyan focus:ring-2 focus:ring-primary-cyan/20 outline-none text-lg transition-all"
+                    className="w-full px-6 py-6 pr-16 bg-gray-50 dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-3xl focus:border-primary-cyan focus:ring-4 focus:ring-primary-cyan/10 outline-none text-xl font-medium transition-all dark:text-white"
                     disabled={isRecording || isProcessing}
                 />
                 <button
                     onClick={isRecording ? stopRecording : startRecording}
                     disabled={isProcessing}
-                    className={`absolute right-2 top-1/2 -translate-y-1/2 p-3 rounded-lg transition-all ${isRecording
-                            ? 'bg-red-500 text-white animate-pulse'
-                            : 'bg-primary-navy text-primary-cyan hover:bg-primary-navy/90 border-2 border-primary-cyan/30 focus:ring-2 focus:ring-primary-cyan/50'
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 p-4 rounded-2xl transition-all shadow-lg active:scale-90 ${isRecording
+                        ? 'bg-red-500 text-white animate-pulse'
+                        : 'bg-primary-navy text-primary-cyan hover:bg-primary-navy/90 border border-primary-cyan/20'
                         }`}
                 >
-                    {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                    {isRecording ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
                 </button>
             </div>
 
@@ -142,8 +142,8 @@ export default function TransactionInput({ businessId, onSuccess }: TransactionI
                             <div className="flex items-center gap-2 mb-1">
                                 <span
                                     className={`px-3 py-1 rounded-full text-sm font-medium ${preview.type === 'income'
-                                            ? 'bg-green-100 text-green-700'
-                                            : 'bg-red-100 text-red-700'
+                                        ? 'bg-green-100 text-green-700'
+                                        : 'bg-red-100 text-red-700'
                                         }`}
                                 >
                                     {preview.type === 'income' ? '↑ Entrada' : '↓ Saída'}

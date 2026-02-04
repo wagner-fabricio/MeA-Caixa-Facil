@@ -5,17 +5,17 @@
   --foreground: #171717;
 }
 
-@theme inline {
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  
+
   /* Brand Colors */
   --color-primary-cyan: #00D4FF;
   --color-primary-navy: #1E3A5F;
   --color-primary-coral: #FF6B6B;
-  
+
   /* Semantic Colors */
   --color-semantic-income: #10B981;
   --color-semantic-expense: #EF4444;
