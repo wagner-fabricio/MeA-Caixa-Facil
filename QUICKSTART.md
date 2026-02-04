@@ -20,8 +20,8 @@ npm install
 
 # Configure .env.local
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mea_caixa_facil"
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="test-secret-change-in-production"
+NEXT_PUBLIC_SUPABASE_URL="https://sua-url.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="sua-chave-anon"
 GOOGLE_CLIENT_ID="optional-for-now"
 GOOGLE_CLIENT_SECRET="optional-for-now"
 ```

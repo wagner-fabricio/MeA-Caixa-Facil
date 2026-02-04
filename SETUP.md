@@ -17,12 +17,19 @@
 2. Copie a "Connection string" (URI)
 3. Substitua `[YOUR-PASSWORD]` pela senha que você escolheu
 
-### 3. Configurar .env.local
+### 3. Configurar Redirect URIs (Auth) no Supabase
+1. No painel do Supabase, vá em **Authentication** → **URL Configuration**.
+2. Em **Site URL**, defina: `https://mea-caixa-facil.vercel.app`
+3. Em **Redirect URIs**, adicione:
+   - `http://localhost:3000/**`
+   - `https://mea-caixa-facil.vercel.app/**`
+
+### 4. Configurar .env.local
 ```bash
 DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres"
 ```
 
-### 4. Rodar migrações
+### 5. Rodar migrações
 ```bash
 npx prisma migrate dev --name init
 npx prisma generate
@@ -67,8 +74,7 @@ npx prisma generate
    - Application type: Web application
    - Name: M&A Caixa Fácil
    - Authorized redirect URIs:
-     - `http://localhost:3000/api/auth/callback/google`
-     - `https://seu-dominio.com/api/auth/callback/google` (produção)
+     - `https://ekputlomxnidoqsojvzs.supabase.co/auth/v1/callback`
 
 ### 3. Copiar credenciais
 Copie o Client ID e Client Secret para `.env.local`:
@@ -76,24 +82,6 @@ Copie o Client ID e Client Secret para `.env.local`:
 ```bash
 GOOGLE_CLIENT_ID="seu-client-id.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET="seu-client-secret"
-```
-
----
-
-## NextAuth Secret
-
-Gere um secret aleatório:
-
-```bash
-# No PowerShell
-[Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes((New-Guid).ToString()))
-```
-
-Adicione ao `.env.local`:
-
-```bash
-NEXTAUTH_SECRET="seu-secret-gerado"
-NEXTAUTH_URL="http://localhost:3000"
 ```
 
 ---
@@ -113,12 +101,10 @@ npx prisma studio
 ## Arquivo .env.local completo
 
 ```bash
-# Database
+# Banco de dados e Auth
 DATABASE_URL="postgresql://postgres:password@localhost:5432/mea_caixa_facil"
-
-# NextAuth
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="seu-secret-aqui"
+NEXT_PUBLIC_SUPABASE_URL="https://sua-url.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="sua-chave-anon"
 
 # Google OAuth
 GOOGLE_CLIENT_ID="seu-client-id.apps.googleusercontent.com"
