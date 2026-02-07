@@ -43,63 +43,106 @@ export async function POST(req: NextRequest) {
         const { name, email, businessName, businessType, supabaseId } = signupSchema.parse(body)
         console.log('Signup data parsed successfully')
 
-        // Check if user already exists
-        const existingUser = await prisma.user.findUnique({
+        // Check if user already exists by Supabase ID
+        let user = await prisma.user.findUnique({
             where: { id: supabaseId },
+            include: { businesses: true }
         })
 
-        if (existingUser) {
-            console.log('User already exists:', email)
+        if (!user) {
+            // Case 2: Check by email (important for linking existing records from migrations)
+            const existingByEmail = await prisma.user.findUnique({
+                where: { email },
+            })
+
+            if (existingByEmail) {
+                console.log('Linking existing email to new Supabase ID:', email)
+                // Update the existing user to use the new Supabase ID
+                user = await prisma.user.update({
+                    where: { email },
+                    data: { id: supabaseId },
+                    include: { businesses: true }
+                })
+            }
+        }
+
+        if (user && user.businesses.length > 0) {
+            console.log('User and business already exist:', email)
             return NextResponse.json(
-                { message: 'Usuário já existe no banco de dados' },
+                { message: 'Usuário já configurado', user: { id: user.id, email: user.email } },
                 { status: 200 }
             )
         }
 
-        // Create user and business in a transaction
-        console.log('Creating user and business in transaction...')
-        const user = await prisma.user.create({
-            data: {
-                id: supabaseId,
-                name,
-                email,
-                businesses: {
-                    create: {
-                        name: businessName,
-                        type: businessType,
-                        categories: {
-                            create: [
-                                // Income categories
-                                ...DEFAULT_CATEGORIES[businessType as keyof typeof DEFAULT_CATEGORIES].income.map((cat) => ({
-                                    name: cat,
-                                    type: 'income',
-                                    isDefault: true,
-                                })),
-                                // Expense categories
-                                ...DEFAULT_CATEGORIES[businessType as keyof typeof DEFAULT_CATEGORIES].expense.map((cat) => ({
-                                    name: cat,
-                                    type: 'expense',
-                                    isDefault: true,
-                                })),
-                            ],
+        // If user exists but has no business, we continue to business creation
+        // If user doesn't exist at all, we create both
+        if (!user) {
+            console.log('Creating new user and business...')
+            user = await prisma.user.create({
+                data: {
+                    id: supabaseId,
+                    name,
+                    email,
+                    businesses: {
+                        create: {
+                            name: businessName,
+                            type: businessType,
+                            categories: {
+                                create: [
+                                    ...DEFAULT_CATEGORIES[businessType as keyof typeof DEFAULT_CATEGORIES].income.map((cat) => ({
+                                        name: cat,
+                                        type: 'income',
+                                        isDefault: true,
+                                    })),
+                                    ...DEFAULT_CATEGORIES[businessType as keyof typeof DEFAULT_CATEGORIES].expense.map((cat) => ({
+                                        name: cat,
+                                        type: 'expense',
+                                        isDefault: true,
+                                    })),
+                                ],
+                            },
                         },
                     },
                 },
-            },
-        })
+                include: { businesses: true }
+            })
+        } else if (user.businesses.length === 0) {
+            console.log('User exists but no business, creating business for:', email)
+            await prisma.business.create({
+                data: {
+                    ownerId: supabaseId,
+                    name: businessName,
+                    type: businessType,
+                    categories: {
+                        create: [
+                            ...DEFAULT_CATEGORIES[businessType as keyof typeof DEFAULT_CATEGORIES].income.map((cat) => ({
+                                name: cat,
+                                type: 'income',
+                                isDefault: true,
+                            })),
+                            ...DEFAULT_CATEGORIES[businessType as keyof typeof DEFAULT_CATEGORIES].expense.map((cat) => ({
+                                name: cat,
+                                type: 'expense',
+                                isDefault: true,
+                            })),
+                        ],
+                    },
+                }
+            })
+        }
 
         console.log('User and Business created successfully:', user.id)
 
         return NextResponse.json({
             user: {
-                id: user.id,
-                email: user.email,
+                id: (user as any).id,
+                email: (user as any).email,
             }
         })
     } catch (error: any) {
         console.error('Signup error:', error)
         if (error instanceof z.ZodError) {
-            return NextResponse.json({ error: error.errors }, { status: 400 })
+            return NextResponse.json({ error: error.format() }, { status: 400 })
         }
         return NextResponse.json(
             { error: error.message || 'Erro ao criar conta' },

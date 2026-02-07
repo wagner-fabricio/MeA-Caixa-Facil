@@ -64,9 +64,15 @@ export default function SignupPage() {
                 throw new Error(data.error || 'Erro ao configurar seu negócio')
             }
 
-            // Redirect to dashboard (Supabase middleware will handle session)
-            router.push('/dashboard')
-            router.refresh()
+            // Redirect or show message
+            if (authData.session) {
+                // Successfully logged in
+                router.push('/dashboard')
+                router.refresh()
+            } else {
+                // Email confirmation likely required
+                setStep(3); // Show a new "Success/Email" step
+            }
         } catch (err: any) {
             setError(err.message)
         } finally {
@@ -75,12 +81,18 @@ export default function SignupPage() {
     }
 
     const handleGoogleSignIn = async () => {
-        await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: `${window.location.origin}/auth/callback`,
-            },
-        })
+        try {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: `${window.location.origin}/auth/callback`,
+                },
+            })
+            if (error) throw error
+        } catch (err) {
+            console.error('Erro no login Google (Signup):', err)
+            setError('Falha ao iniciar login com Google. Verifique o console.')
+        }
     }
 
     return (
@@ -98,20 +110,22 @@ export default function SignupPage() {
                         />
                     </div>
                     <h1 className="text-3xl font-bold text-primary-navy">
-                        Crie sua conta grátis
+                        {step === 3 ? 'Conta Criada!' : 'Crie sua conta grátis'}
                     </h1>
                     <p className="text-gray-600 mt-2">
-                        {step === 1 ? 'Seus dados pessoais' : 'Sobre seu negócio'}
+                        {step === 1 ? 'Seus dados pessoais' : step === 2 ? 'Sobre seu negócio' : 'Verifique seu email'}
                     </p>
                 </div>
 
                 {/* Signup Form */}
                 <div className="bg-white rounded-2xl shadow-xl p-8">
                     {/* Progress Indicator */}
-                    <div className="flex gap-2 mb-6">
-                        <div className={`flex-1 h-2 rounded-full ${step >= 1 ? 'bg-primary-cyan' : 'bg-gray-200'}`} />
-                        <div className={`flex-1 h-2 rounded-full ${step >= 2 ? 'bg-primary-cyan' : 'bg-gray-200'}`} />
-                    </div>
+                    {step < 3 && (
+                        <div className="flex gap-2 mb-6">
+                            <div className={`flex-1 h-2 rounded-full ${step >= 1 ? 'bg-primary-cyan' : 'bg-gray-200'}`} />
+                            <div className={`flex-1 h-2 rounded-full ${step >= 2 ? 'bg-primary-cyan' : 'bg-gray-200'}`} />
+                        </div>
+                    )}
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         {step === 1 ? (
@@ -182,7 +196,7 @@ export default function SignupPage() {
                                     Próximo
                                 </button>
                             </>
-                        ) : (
+                        ) : step === 2 ? (
                             <>
                                 {/* Business Name */}
                                 <div>
@@ -258,7 +272,28 @@ export default function SignupPage() {
                                     </button>
                                 </div>
                             </>
-                        )}
+                        ) : step === 3 ? (
+                            <div className="text-center space-y-6 py-4">
+                                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Mail className="w-10 h-10 text-green-600" />
+                                </div>
+                                <h2 className="text-2xl font-bold text-primary-navy">
+                                    Quase lá!
+                                </h2>
+                                <p className="text-gray-600">
+                                    Enviamos um link de confirmação para o seu email.
+                                    Por favor, verifique sua caixa de entrada (e o spam) para ativar sua conta.
+                                </p>
+                                <div className="pt-4">
+                                    <Link
+                                        href="/login"
+                                        className="inline-block w-full bg-primary-cyan text-white py-3 rounded-xl font-semibold hover:bg-primary-cyan/90 transition-all"
+                                    >
+                                        Ir para o Login
+                                    </Link>
+                                </div>
+                            </div>
+                        ) : null}
                     </form>
 
                     {step === 1 && (
@@ -302,21 +337,24 @@ export default function SignupPage() {
                         </>
                     )}
 
-                    {/* Login Link */}
-                    <p className="text-center text-sm text-gray-600 mt-6">
-                        Já tem uma conta?{' '}
-                        <Link href="/login" className="text-primary-cyan font-semibold hover:underline">
-                            Fazer login
-                        </Link>
-                    </p>
+                    {step < 3 && (
+                        <p className="text-center text-sm text-gray-600 mt-6">
+                            Já tem uma conta?{' '}
+                            <Link href="/login" className="text-primary-cyan font-semibold hover:underline">
+                                Fazer login
+                            </Link>
+                        </p>
+                    )}
                 </div>
 
                 {/* Back to Home */}
-                <div className="text-center mt-6">
-                    <Link href="/" className="text-sm text-gray-600 hover:text-primary-cyan transition-colors">
-                        ← Voltar para o início
-                    </Link>
-                </div>
+                {step < 3 && (
+                    <div className="text-center mt-6">
+                        <Link href="/" className="text-sm text-gray-600 hover:text-primary-cyan transition-colors">
+                            ← Voltar para o início
+                        </Link>
+                    </div>
+                )}
             </div>
         </div>
     )

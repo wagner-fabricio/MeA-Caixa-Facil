@@ -1,31 +1,27 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-// NextAuth.js required models
 model Account {
   id                String  @id @default(cuid())
   userId            String
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -48,8 +44,8 @@ model User {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
   accounts      Account[]
-  sessions      Session[]
   businesses    Business[]
+  sessions      Session[]
 }
 
 model VerificationToken {
@@ -60,32 +56,31 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// Business domain models
 model Business {
   id           String        @id @default(cuid())
   name         String
-  type         String // barbershop, salon, workshop, other
+  type         String
   ownerId      String
-  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
-  transactions Transaction[]
-  categories   Category[]
   alerts       Alert[]
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  categories   Category[]
+  transactions Transaction[]
 }
 
 model Transaction {
   id          String   @id @default(cuid())
-  type        String // income, expense
+  type        String
   amount      Float
   description String
   category    String
-  method      String   @default("manual") // manual, voice, qrcode
+  method      String   @default("manual")
   date        DateTime @default(now())
   businessId  String
-  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@index([businessId, date])
   @@index([businessId, type])
@@ -94,28 +89,28 @@ model Transaction {
 model Category {
   id         String   @id @default(cuid())
   name       String
-  type       String // income, expense
+  type       String
   icon       String?
   color      String?
   isDefault  Boolean  @default(false)
   usageCount Int      @default(0)
   businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@unique([businessId, name, type])
 }
 
 model Alert {
   id         String   @id @default(cuid())
-  type       String // no_activity, spending_spike, negative_streak, monthly_comparison
+  type       String
   message    String
-  severity   String   @default("info") // info, warning, critical
+  severity   String   @default("info")
   isRead     Boolean  @default(false)
   businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@index([businessId, isRead])
 }

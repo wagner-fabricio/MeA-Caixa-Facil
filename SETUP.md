@@ -21,12 +21,12 @@
 1. No painel do Supabase, vá em **Authentication** → **URL Configuration**.
 2. Em **Site URL**, defina: `https://mea-caixa-facil.vercel.app`
 3. Em **Redirect URIs**, adicione:
-   - `http://localhost:3000/**`
-   - `https://mea-caixa-facil.vercel.app/**`
+   - `http://localhost:3000`
+   - `https://mea-caixa-facil.vercel.app`
 
 ### 4. Configurar .env.local
 ```bash
-DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres"
+DATABASE_URL="postgresql://postgres.ekputlomxnidoqsojvzs:Esarah25.120180@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
 ```
 
 ### 5. Rodar migrações
