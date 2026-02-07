@@ -28,14 +28,15 @@ export default function SignupPage() {
     })
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
+    const [supabaseId, setSupabaseId] = useState<string | null>(null)
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleStep1Submit = async (e: React.FormEvent) => {
         e.preventDefault()
         setError('')
         setLoading(true)
 
         try {
-            // 1. Sign up with Supabase
+            // Attempt to sign up - this will catch if email is already taken
             const { data: authData, error: authError } = await supabase.auth.signUp({
                 email: formData.email,
                 password: formData.password,
@@ -46,7 +47,34 @@ export default function SignupPage() {
                 }
             })
 
-            if (authError) throw authError
+            if (authError) {
+                // Supabase sometimes returns "User already registered" as an error
+                if (authError.message.toLowerCase().includes('already registered') || authError.status === 422) {
+                    throw new Error('Este email já está cadastrado. Tente fazer login.')
+                }
+                throw authError
+            }
+
+            if (authData.user) {
+                setSupabaseId(authData.user.id)
+                setStep(2)
+            }
+        } catch (err: any) {
+            setError(err.message)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setError('')
+        setLoading(true)
+
+        try {
+            if (!supabaseId) {
+                throw new Error('Falha na identificação do usuário. Tente novamente.')
+            }
 
             // 2. Create business and categories in our DB
             const response = await fetch('/api/auth/signup', {
@@ -54,7 +82,7 @@ export default function SignupPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...formData,
-                    supabaseId: authData.user?.id // Link Supabase user to our DB
+                    supabaseId: supabaseId
                 }),
             })
 
@@ -64,14 +92,14 @@ export default function SignupPage() {
                 throw new Error(data.error || 'Erro ao configurar seu negócio')
             }
 
-            // Redirect or show message
-            if (authData.session) {
-                // Successfully logged in
+            // check session (it might be null if email confirmation is required)
+            const { data: { session } } = await supabase.auth.getSession()
+
+            if (session) {
                 router.push('/dashboard')
                 router.refresh()
             } else {
-                // Email confirmation likely required
-                setStep(3); // Show a new "Success/Email" step
+                setStep(3); // Success/Email step
             }
         } catch (err: any) {
             setError(err.message)
@@ -188,12 +216,26 @@ export default function SignupPage() {
                                     </div>
                                 </div>
 
+                                {error && step === 1 && (
+                                    <div className="bg-red-50 text-red-600 px-4 py-3 rounded-xl text-sm">
+                                        {error}
+                                    </div>
+                                )}
+
                                 <button
                                     type="button"
-                                    onClick={() => setStep(2)}
-                                    className="w-full bg-primary-cyan text-white py-3 rounded-xl font-semibold hover:bg-primary-cyan/90 transition-all"
+                                    onClick={handleStep1Submit}
+                                    disabled={loading}
+                                    className="w-full bg-primary-cyan text-white py-3 rounded-xl font-semibold hover:bg-primary-cyan/90 transition-all flex items-center justify-center gap-2"
                                 >
-                                    Próximo
+                                    {loading ? (
+                                        <>
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                            Validando...
+                                        </>
+                                    ) : (
+                                        'Próximo'
+                                    )}
                                 </button>
                             </>
                         ) : step === 2 ? (

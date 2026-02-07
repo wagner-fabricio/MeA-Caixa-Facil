@@ -115,6 +115,14 @@ export default function LoginPage() {
                                     suppressHydrationWarning
                                 />
                             </div>
+                            <div className="flex justify-end mt-2">
+                                <Link
+                                    href="/forgot-password"
+                                    className="text-sm text-primary-cyan hover:underline font-medium"
+                                >
+                                    Esqueceu a senha?
+                                </Link>
+                            </div>
                         </div>
 
                         {/* Error Message */}
