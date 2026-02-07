@@ -3,7 +3,8 @@
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { TrendingUp, TrendingDown, DollarSign, Plus, LogOut } from 'lucide-react'
+import { TrendingUp, TrendingDown, DollarSign, Plus, LogOut, Edit3, Trash2 } from 'lucide-react'
+import ConfirmDialog from '@/components/confirm-dialog'
 import { motion } from 'framer-motion'
 import TransactionInput from '@/components/transaction-input'
 import IncomeExpenseChart from '@/components/dashboard/income-expense-chart'
@@ -45,6 +46,11 @@ export default function DashboardPage() {
     const [alerts, setAlerts] = useState<Alert[]>([])
     const [loading, setLoading] = useState(true)
     const [showInput, setShowInput] = useState(false)
+    const [editingId, setEditingId] = useState<string | null>(null)
+    const [edited, setEdited] = useState<any>(null)
+    const [confirmOpen, setConfirmOpen] = useState(false)
+    const [pendingDelete, setPendingDelete] = useState<any>(null)
+    const [undoToast, setUndoToast] = useState<any>(null)
 
     useEffect(() => {
         const checkUser = async () => {
@@ -333,24 +339,114 @@ export default function DashboardPage() {
                             {data.transactions.map((transaction: any) => (
                                 <div
                                     key={transaction.id}
-                                    className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                                    className="p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors w-full"
                                 >
-                                    <div className="flex-1">
-                                        <p className="font-medium text-gray-900">{transaction.description}</p>
-                                        <p className="text-sm text-gray-500">{transaction.category}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className={`text-xl font-bold font-mono ${transaction.type === 'income' ? 'text-semantic-income' : 'text-semantic-expense'
-                                            }`}>
-                                            {transaction.type === 'income' ? '+' : '-'} R$ {transaction.amount.toFixed(2)}
-                                        </p>
-                                        <p className="text-xs text-gray-400">
-                                            {new Date(transaction.date).toLocaleTimeString('pt-BR', {
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                            })}
-                                        </p>
-                                    </div>
+                                    {editingId === transaction.id ? (
+                                        <div className="w-full flex flex-col md:flex-row items-start md:items-center gap-3">
+                                            <input
+                                                className="flex-1 min-w-0 px-3 py-2 rounded-lg border"
+                                                value={edited.description}
+                                                onChange={(e) => setEdited({ ...edited, description: e.target.value })}
+                                            />
+                                            <div className="flex gap-2 w-full md:w-auto flex-wrap">
+                                                <input
+                                                    className="w-full md:w-28 px-3 py-2 rounded-lg border text-right font-mono"
+                                                    value={edited.amount}
+                                                    onChange={(e) => setEdited({ ...edited, amount: Number(e.target.value) })}
+                                                />
+                                                <select
+                                                    className="w-full md:w-28 px-3 py-2 rounded-lg border"
+                                                    value={edited.type}
+                                                    onChange={(e) => setEdited({ ...edited, type: e.target.value })}
+                                                >
+                                                    <option value="income">Entrada</option>
+                                                    <option value="expense">Saída</option>
+                                                </select>
+                                                <input
+                                                    className="flex-1 md:w-36 px-3 py-2 rounded-lg border"
+                                                    value={edited.category}
+                                                    onChange={(e) => setEdited({ ...edited, category: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={async () => {
+                                                        try {
+                                                            const res = await fetch('/api/transactions', {
+                                                                method: 'PATCH',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({
+                                                                    id: transaction.id,
+                                                                    amount: Number(edited.amount),
+                                                                    description: edited.description,
+                                                                    category: edited.category,
+                                                                    type: edited.type,
+                                                                }),
+                                                            })
+                                                            if (!res.ok) throw new Error('Erro')
+                                                            setEditingId(null)
+                                                            await loadDashboardData(businessId!)
+                                                        } catch (err) {
+                                                            console.error(err)
+                                                        }
+                                                    }}
+                                                    className="px-3 py-2 bg-primary-navy text-white rounded-lg"
+                                                >Salvar</button>
+                                                <button
+                                                    onClick={() => setEditingId(null)}
+                                                    className="px-3 py-2 bg-gray-200 rounded-lg"
+                                                >Cancelar</button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 w-full">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-medium text-gray-900 truncate">{transaction.description}</p>
+                                                <p className="text-sm text-gray-500 truncate">{transaction.category}</p>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <div className="text-right">
+                                                    <p className={`text-xl font-bold font-mono ${transaction.type === 'income' ? 'text-semantic-income' : 'text-semantic-expense'
+                                                        }`}>
+                                                        {transaction.type === 'income' ? '+' : '-'} R$ {transaction.amount.toFixed(2)}
+                                                    </p>
+                                                    <p className="text-xs text-gray-400">
+                                                        {new Date(transaction.date).toLocaleTimeString('pt-BR', {
+                                                            hour: '2-digit',
+                                                            minute: '2-digit',
+                                                        })}
+                                                    </p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            setEditingId(transaction.id)
+                                                            setEdited({
+                                                                description: transaction.description,
+                                                                amount: transaction.amount,
+                                                                category: transaction.category,
+                                                                type: transaction.type,
+                                                            })
+                                                        }}
+                                                        className="p-2 rounded-lg hover:bg-gray-100"
+                                                        title="Editar"
+                                                    >
+                                                        <Edit3 className="w-4 h-4 text-gray-600" />
+                                                    </button>
+                                                    <button
+                                                        onClick={async () => {
+                                                            setPendingDelete(transaction)
+                                                            setConfirmOpen(true)
+                                                        }}
+                                                        className="p-2 rounded-lg hover:bg-gray-100"
+                                                        title="Excluir"
+                                                    >
+                                                        <Trash2 className="w-4 h-4 text-red-500" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -366,6 +462,79 @@ export default function DashboardPage() {
                         </div>
                     )}
                 </motion.div>
+                <ConfirmDialog
+                    open={confirmOpen}
+                    title="Excluir transação"
+                    message="Deseja realmente excluir esta transação?"
+                    confirmLabel="Excluir"
+                    cancelLabel="Cancelar"
+                    onCancel={() => { setConfirmOpen(false); setPendingDelete(null) }}
+                    onConfirm={async () => {
+                        if (!pendingDelete) return
+                        try {
+                            // perform delete
+                            const res = await fetch('/api/transactions', {
+                                method: 'DELETE',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ id: pendingDelete.id }),
+                            })
+                            if (!res.ok) throw new Error('Erro')
+
+                            // store deleted tx for undo
+                            setUndoToast({ tx: pendingDelete })
+
+                            // hide modal
+                            setConfirmOpen(false)
+                            setPendingDelete(null)
+
+                            // reload data
+                            if (businessId) await loadDashboardData(businessId)
+
+                            // auto-dismiss toast after 8s
+                            setTimeout(() => setUndoToast(null), 8000)
+                        } catch (err) {
+                            console.error(err)
+                            setConfirmOpen(false)
+                            setPendingDelete(null)
+                        }
+                    }}
+                />
+
+                {/* Undo toast */}
+                {undoToast && (
+                    <div className="fixed right-4 bottom-4 z-50 bg-white dark:bg-gray-900 border rounded-lg shadow-lg p-4 flex items-center gap-4">
+                        <div className="flex-1 text-sm">Transação excluída</div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        const tx = undoToast.tx
+                                        const res = await fetch('/api/transactions/restore', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                type: tx.type,
+                                                amount: tx.amount,
+                                                description: tx.description,
+                                                category: tx.category,
+                                                method: tx.method,
+                                                businessId: tx.businessId,
+                                                date: tx.date,
+                                            }),
+                                        })
+                                        if (!res.ok) throw new Error('Erro')
+                                        setUndoToast(null)
+                                        if (businessId) await loadDashboardData(businessId)
+                                    } catch (err) {
+                                        console.error(err)
+                                    }
+                                }}
+                                className="px-3 py-1 bg-primary-navy text-white rounded-md text-sm"
+                            >Desfazer</button>
+                            <button onClick={() => setUndoToast(null)} className="px-2 py-1 text-sm text-gray-500">Fechar</button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     )
