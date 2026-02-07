@@ -1,12 +1,14 @@
 'use client'
 
+import { Suspense } from 'react'
+
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Mail, Loader2, ArrowLeft } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 
-export default function ForgotPasswordPage() {
+function ForgotPasswordContent() {
     const supabase = createClient()
     const [email, setEmail] = useState('')
     const [loading, setLoading] = useState(false)
@@ -88,5 +90,13 @@ export default function ForgotPasswordPage() {
                 </div>
             </div>
         </div>
+    )
+}
+
+export default function ForgotPasswordPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50"><Loader2 className="w-8 h-8 animate-spin text-primary-cyan" /></div>}>
+            <ForgotPasswordContent />
+        </Suspense>
     )
 }

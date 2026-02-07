@@ -8,8 +8,13 @@ export const metadata: Metadata = {
   title: "M&A Caixa Fácil - Controle do caixa sem complicação",
   description: "Registre entradas e saídas falando ou digitando. O Caixa Fácil mostra tudo — sem planilhas, sem dor de cabeça.",
   manifest: "/manifest.json",
+};
+
+export const viewport = {
   themeColor: "#00D4FF",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({
