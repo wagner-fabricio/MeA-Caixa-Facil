@@ -59,31 +59,33 @@ export default function DashboardPage() {
     }, [router, supabase])
 
     useEffect(() => {
+        const loadBusinessAndData = async () => {
+            try {
+                // Get user's first business
+                const bizResponse = await fetch('/api/businesses')
+                const bizData = await bizResponse.json()
+
+                if (bizData.businesses && bizData.businesses.length > 0) {
+                    const firstBusiness = bizData.businesses[0]
+                    setBusinessId(firstBusiness.id)
+                    await loadDashboardData(firstBusiness.id)
+                    await loadAlerts(firstBusiness.id)
+                } else {
+                    router.push('/onboarding')
+                }
+            } catch (error) {
+                console.error('Error loading business:', error)
+            } finally {
+                setLoading(false)
+            }
+        }
+
         if (user) {
             loadBusinessAndData()
         }
-    }, [user])
+    }, [user, router])
 
-    const loadBusinessAndData = async () => {
-        try {
-            // Get user's first business
-            const bizResponse = await fetch('/api/businesses')
-            const bizData = await bizResponse.json()
 
-            if (bizData.businesses && bizData.businesses.length > 0) {
-                const firstBusiness = bizData.businesses[0]
-                setBusinessId(firstBusiness.id)
-                await loadDashboardData(firstBusiness.id)
-                await loadAlerts(firstBusiness.id)
-            } else {
-                router.push('/onboarding')
-            }
-        } catch (error) {
-            console.error('Error loading business:', error)
-        } finally {
-            setLoading(false)
-        }
-    }
 
     const loadDashboardData = async (bizId: string) => {
         try {

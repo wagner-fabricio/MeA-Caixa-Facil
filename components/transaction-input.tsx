@@ -118,7 +118,7 @@ export default function TransactionInput({ businessId, onSuccess }: TransactionI
                     type="text"
                     value={input}
                     onChange={(e) => handleInputChange(e.target.value)}
-                    placeholder='Ex: "Corte 35" ou "Luz 180"'
+                    placeholder='Ex: &quot;Corte 35&quot; ou &quot;Luz 180&quot;'
                     className="w-full px-6 py-6 pr-16 bg-gray-50 dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-3xl focus:border-primary-cyan focus:ring-4 focus:ring-primary-cyan/10 outline-none text-xl font-medium transition-all dark:text-white"
                     disabled={isRecording || isProcessing}
                 />
@@ -193,7 +193,7 @@ export default function TransactionInput({ businessId, onSuccess }: TransactionI
                 <p className="font-medium mb-1">💡 Dicas:</p>
                 <ul className="list-disc list-inside space-y-1">
                     <li>Digite ou fale o valor e o que foi</li>
-                    <li>Ex: "Corte 35", "Recebi 50", "Luz 180"</li>
+                    <li>Ex: &quot;Corte 35&quot;, &quot;Recebi 50&quot;, &quot;Luz 180&quot;</li>
                     <li>O app detecta automaticamente se é entrada ou saída</li>
                 </ul>
             </div>
