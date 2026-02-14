@@ -13,9 +13,13 @@ export async function GET(request: Request) {
         const { error } = await supabase.auth.exchangeCodeForSession(code)
         if (error) {
             console.error('Erro ao trocar código por sessão:', error)
+            return NextResponse.redirect(`${origin}/login?error=Auth failed`)
         } else {
             const forwardedHost = request.headers.get('x-forwarded-host') // original origin before load balancer
             const isLocalEnv = process.env.NODE_ENV === 'development'
+            
+            console.log('OAuth callback sucesso:', { isLocalEnv, forwardedHost, origin, next })
+            
             if (isLocalEnv) {
                 // we can be sure that there is no proxy
                 return NextResponse.redirect(`${origin}${next}`)
@@ -28,5 +32,6 @@ export async function GET(request: Request) {
     }
 
     // return the user to an error page with instructions
+    console.error('OAuth callback: no code provided')
     return NextResponse.redirect(`${origin}/login?error=Could not authenticate user`)
 }

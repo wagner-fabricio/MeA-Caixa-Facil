@@ -41,10 +41,15 @@ export default function LoginPage() {
 
     const handleGoogleSignIn = async () => {
         try {
+            // Use NEXT_PUBLIC_APP_URL if available (production), otherwise use window.location.origin
+            const redirectUrl = process.env.NEXT_PUBLIC_APP_URL 
+                ? `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`
+                : `${window.location.origin}/api/auth/callback`
+
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: `${window.location.origin}/api/auth/callback`,
+                    redirectTo: redirectUrl,
                 },
             })
             if (error) throw error

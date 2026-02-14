@@ -7,6 +7,9 @@ import { TrendingUp, TrendingDown, DollarSign, Plus, LogOut, Edit3, Trash2 } fro
 import ConfirmDialog from '@/components/confirm-dialog'
 import { motion } from 'framer-motion'
 import TransactionInput from '@/components/transaction-input'
+import ExpenseModal from '@/components/expense-modal'
+import DashboardHeader from '@/components/dashboard-header'
+import PeriodFilter, { PeriodFilter as PeriodFilterType } from '@/components/period-filter'
 import IncomeExpenseChart from '@/components/dashboard/income-expense-chart'
 import CategoryBreakdown from '@/components/dashboard/category-breakdown'
 import BalanceEvolutionChart from '@/components/dashboard/balance-evolution-chart'
@@ -46,11 +49,18 @@ export default function DashboardPage() {
     const [alerts, setAlerts] = useState<Alert[]>([])
     const [loading, setLoading] = useState(true)
     const [showInput, setShowInput] = useState(false)
+    const [showExpenseModal, setShowExpenseModal] = useState(false)
     const [editingId, setEditingId] = useState<string | null>(null)
     const [edited, setEdited] = useState<any>(null)
     const [confirmOpen, setConfirmOpen] = useState(false)
     const [pendingDelete, setPendingDelete] = useState<any>(null)
     const [undoToast, setUndoToast] = useState<any>(null)
+    const [periodFilter, setPeriodFilter] = useState<PeriodFilterType>({
+        type: 'month',
+        startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+        endDate: new Date().toISOString().split('T')[0],
+    })
+    const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([])
 
     useEffect(() => {
         const checkUser = async () => {
@@ -90,6 +100,21 @@ export default function DashboardPage() {
             loadBusinessAndData()
         }
     }, [user, router])
+
+    // Filter transactions based on period
+    useEffect(() => {
+        if (data?.allTransactions) {
+            const startDate = new Date(periodFilter.startDate || '').getTime()
+            const endDate = new Date(periodFilter.endDate || '').getTime()
+
+            const filtered = data.allTransactions.filter(tx => {
+                const txDate = new Date(tx.date).getTime()
+                return txDate >= startDate && txDate <= endDate
+            })
+
+            setFilteredTransactions(filtered)
+        }
+    }, [data, periodFilter])
 
 
 
@@ -176,31 +201,11 @@ export default function DashboardPage() {
     }
 
     return (
-        <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
-            {/* Header */}
-            <header className="sticky top-0 z-50 bg-white/70 dark:bg-black/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50">
-                <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-                    <h1 className="text-2xl font-bold tracking-tight text-primary-navy dark:text-white">
-                        M&A <span className="text-primary-cyan">Caixa Fácil</span>
-                    </h1>
-                    <div className="flex items-center gap-4">
-                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400 hidden md:inline">Olá, {user.user_metadata?.name || user.email}</span>
-                        <button
-                            onClick={async () => {
-                                await supabase.auth.signOut()
-                                router.push('/')
-                            }}
-                            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-primary-navy dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all border border-gray-200 dark:border-gray-700 shadow-sm active:scale-95"
-                            title="Sair"
-                        >
-                            <LogOut className="w-4 h-4" />
-                            <span className="hidden sm:inline">Sair</span>
-                        </button>
-                    </div>
-                </div>
-            </header>
+        <div className="min-h-screen bg-gradient-to-br from-background via-white dark:via-gray-950 to-primary-cyan/5 text-foreground transition-colors duration-300">
+            <div className="container mx-auto px-4 py-6 md:py-8 w-full">
+                {/* Dashboard Header */}
+                <DashboardHeader />
 
-            <div className="container mx-auto px-4 py-8 max-w-6xl">
                 {/* Alerts */}
                 <AlertBanner alerts={alerts} onDismiss={dismissAlert} />
 
@@ -262,22 +267,37 @@ export default function DashboardPage() {
                     </motion.div>
                 </div>
 
-                {/* Quick Action Button */}
-                {!showInput && (
+                {/* Quick Action Buttons */}
+                <div className="flex flex-col md:flex-row gap-4 mb-8">
+                    {!showInput && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="flex-1"
+                        >
+                            <button
+                                onClick={() => setShowInput(true)}
+                                className="w-full inline-flex items-center justify-center gap-3 px-10 py-5 bg-primary-navy text-white rounded-2xl font-bold text-lg hover:bg-primary-navy/90 transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1 active:scale-95"
+                            >
+                                <Plus className="w-6 h-6 text-primary-cyan" />
+                                Registrar Transação
+                            </button>
+                        </motion.div>
+                    )}
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="mb-8 text-center"
+                        className="flex-1"
                     >
                         <button
-                            onClick={() => setShowInput(true)}
-                            className="inline-flex items-center gap-3 px-10 py-5 bg-primary-navy text-white rounded-2xl font-bold text-xl hover:bg-primary-navy/90 transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1 active:scale-95"
+                            onClick={() => setShowExpenseModal(true)}
+                            className="w-full inline-flex items-center justify-center gap-3 px-10 py-5 bg-primary-cyan text-primary-navy rounded-2xl font-bold text-lg hover:bg-primary-cyan/90 transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1 active:scale-95"
                         >
-                            <Plus className="w-8 h-8 text-primary-cyan" />
-                            Registrar Transação
+                            <Plus className="w-6 h-6" />
+                            + Nova Despesa
                         </button>
                     </motion.div>
-                )}
+                </div>
 
                 {/* Transaction Input */}
                 {showInput && businessId && (
@@ -462,6 +482,82 @@ export default function DashboardPage() {
                         </div>
                     )}
                 </motion.div>
+
+                {/* Expenses by Period */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7 }}
+                    className="space-y-6"
+                >
+                    <PeriodFilter 
+                        currentFilter={periodFilter}
+                        onFilterChange={setPeriodFilter}
+                    />
+
+                    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-800">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-bold text-primary-navy dark:text-white">
+                                Despesas do Período
+                            </h2>
+                            <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">
+                                {filteredTransactions.length} transação{filteredTransactions.length !== 1 ? 's' : ''}
+                            </span>
+                        </div>
+
+                        {filteredTransactions.length > 0 ? (
+                            <div className="space-y-3">
+                                {filteredTransactions.map((transaction: Transaction) => (
+                                    <div
+                                        key={transaction.id}
+                                        className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    >
+                                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-medium text-gray-900 dark:text-white truncate">
+                                                    {transaction.description}
+                                                </p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                                                        transaction.type === 'expense'
+                                                            ? 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400'
+                                                            : 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+                                                    }`}>
+                                                        {transaction.type === 'expense' ? 'Despesa' : 'Receita'}
+                                                    </span>
+                                                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                                                        {transaction.category}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <div className="text-right">
+                                                    <p className={`text-lg font-bold font-mono ${
+                                                        transaction.type === 'income'
+                                                            ? 'text-semantic-income'
+                                                            : 'text-semantic-expense'
+                                                    }`}>
+                                                        {transaction.type === 'income' ? '+' : '-'} R$ {transaction.amount.toFixed(2)}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                        {new Date(transaction.date).toLocaleDateString('pt-BR')}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-12">
+                                <p className="text-gray-500 dark:text-gray-400 mb-4">
+                                    Nenhuma transação no período selecionado
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </motion.div>
+
                 <ConfirmDialog
                     open={confirmOpen}
                     title="Excluir transação"
@@ -536,6 +632,17 @@ export default function DashboardPage() {
                     </div>
                 )}
             </div>
-        </div>
+            {/* Expense Modal */}
+            {businessId && (
+                <ExpenseModal
+                    isOpen={showExpenseModal}
+                    onClose={() => setShowExpenseModal(false)}
+                    businessId={businessId}
+                    onSuccess={() => {
+                        loadDashboardData(businessId)
+                        loadAlerts(businessId)
+                    }}
+                />
+            )}        </div>
     )
 }
