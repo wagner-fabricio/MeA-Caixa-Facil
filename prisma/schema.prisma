@@ -67,6 +67,7 @@ model Business {
   owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   categories   Category[]
   transactions Transaction[]
+  bankAccounts BankAccount[]
 }
 
 model Transaction {
@@ -100,6 +101,20 @@ model Category {
   business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@unique([businessId, name, type])
+}
+
+model BankAccount {
+  id         String   @id @default(cuid())
+  name       String
+  type       String
+  balance    Float    @default(0)
+  businessId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, name])
+  @@index([businessId])
 }
 
 model Alert {
